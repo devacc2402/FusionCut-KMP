@@ -1,0 +1,98 @@
+name: Build Android Release APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0'
+
+      - name: Accept Android SDK Licenses
+        run: |
+          mkdir -p "${ANDROID_HOME}/licenses"
+          echo "89337d1207d1e3fb566d128618a111755945372d" > "${ANDROID_HOME}/licenses/android-sdk-license"
+          echo "24333f8a63518baae07fe1d52313bd9117e2ecd9" >> "${ANDROID_HOME}/licenses/android-sdk-license"
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "${ANDROID_HOME}/licenses/android-sdk-license"
+          echo "84831b9409646a533e30ed7cb38c10a2540024cd" >> "${ANDROID_HOME}/licenses/android-sdk-license"
+          echo "27043856633a7776b3c43768523070b5144b294f" > "${ANDROID_HOME}/licenses/android-sdk-preview-license"
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
+
+      - name: Prepare Environment Files
+        run: |
+          # Create .env for Secrets Gradle Plugin
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            echo "GEMINI_API_KEY=" > .env
+          fi
+          mkdir -p app
+          cp -f .env app/.env 2>/dev/null || true
+
+          # Restore debug keystore if encoded
+          if [ -f debug.keystore.base64 ] && [ ! -s debug.keystore ]; then
+            base64 -d debug.keystore.base64 > debug.keystore || true
+          fi
+
+      - name: Setup Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Build Release APK
+        run: |
+          if [ -z "$KEYSTORE_PATH" ] || [ ! -f "$KEYSTORE_PATH" ]; then
+            if [ -f debug.keystore ]; then
+              export KEYSTORE_PATH="$(pwd)/debug.keystore"
+              export STORE_PASSWORD="${STORE_PASSWORD:-android}"
+              export KEY_PASSWORD="${KEY_PASSWORD:-android}"
+            else
+              echo "Generating release signing keystore..."
+              keytool -genkey -v -keystore "$(pwd)/my-upload-key.jks" -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android,O=Android,C=US"
+              export KEYSTORE_PATH="$(pwd)/my-upload-key.jks"
+              export STORE_PASSWORD="android"
+              export KEY_PASSWORD="android"
+            fi
+          fi
+          gradle assembleRelease --stacktrace --no-daemon
+        env:
+          KEYSTORE_PATH: ${{ secrets.KEYSTORE_PATH }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 14

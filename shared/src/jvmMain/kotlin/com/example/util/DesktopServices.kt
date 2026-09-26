@@ -1,0 +1,152 @@
+package com.example.util
+
+import com.example.model.Layer
+import com.example.model.MediaMetadataInfo
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import org.jetbrains.skia.Image
+import org.jetbrains.skia.ImageInfo
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
+class DesktopPlatformBitmap(private val imageBitmap: ImageBitmap) : PlatformBitmap {
+    override val width: Int get() = imageBitmap.width
+    override val height: Int get() = imageBitmap.height
+    
+    override fun asImageBitmap(): ImageBitmap = imageBitmap
+
+    override fun getPixels(pixels: IntArray) {
+        // readPixels on Desktop expects an IntArray
+        imageBitmap.readPixels(
+            buffer = pixels,
+            startX = 0,
+            startY = 0,
+            width = width,
+            height = height,
+            bufferOffset = 0,
+            stride = width * 4
+        )
+    }
+
+    override fun setPixels(pixels: IntArray) {
+        val bytes = ByteBuffer.allocate(width * height * 4).order(ByteOrder.nativeOrder())
+        bytes.asIntBuffer().put(pixels)
+        val skiaImage = Image.makeRaster(
+            ImageInfo.makeN32Premul(width, height),
+            bytes.array(),
+            width * 4
+        )
+        val canvas = Canvas(imageBitmap)
+        canvas.drawImage(skiaImage.toComposeImageBitmap(), androidx.compose.ui.geometry.Offset.Zero, Paint())
+    }
+
+    override fun isRecycled(): Boolean = false
+}
+
+class DesktopAudioPlayer : AudioPlayer {
+    override fun onPlay(startTime: Float, layers: List<Layer>) { /* TODO */ }
+    override fun onPause() { /* TODO */ }
+    override fun onSeek(time: Float, layers: List<Layer>) { /* TODO */ }
+    override fun release() { /* TODO */ }
+}
+
+class DesktopMediaProvider : MediaProvider {
+    private val bitmapCache = mutableMapOf<String, PlatformBitmap>()
+
+    override suspend fun getMediaMetadata(uriString: String): MediaMetadataInfo? {
+        val path = uriString.removePrefix("file://").replace("%20", " ")
+        val file = File(path)
+        if (!file.exists()) return null
+        
+        val isVideo = uriString.contains("video", ignoreCase = true) || uriString.endsWith(".mp4", ignoreCase = true)
+        val durationMs = try {
+            if (isVideo) Mp4DurationExtractor.getDurationMs(file) else 0L
+        } catch (e: Exception) { 0L }
+
+        return MediaMetadataInfo(
+            width = 1280,
+            height = 720,
+            durationMs = if (durationMs > 0) durationMs else 5000L,
+            rotation = 0,
+            isVideo = isVideo
+        )
+    }
+
+    override suspend fun copyMediaToLocalStorage(projectId: Long, uriString: String, isVideo: Boolean): String {
+        return uriString
+    }
+
+    override suspend fun loadBitmap(uriString: String, isVideo: Boolean): PlatformBitmap? {
+        if (bitmapCache.containsKey(uriString)) return bitmapCache[uriString]
+        
+        return try {
+            val path = uriString.removePrefix("file://").replace("%20", " ")
+            val file = File(path)
+            if (!file.exists()) return null
+            
+            val bytes = file.readBytes()
+            val skiaImage = Image.makeFromEncoded(bytes)
+            
+            // Create a MUTABLE ImageBitmap and draw the loaded image into it
+            val mutableBitmap = ImageBitmap(skiaImage.width, skiaImage.height)
+            val canvas = Canvas(mutableBitmap)
+            canvas.drawImage(skiaImage.toComposeImageBitmap(), androidx.compose.ui.geometry.Offset.Zero, Paint())
+            
+            val platformBitmap = DesktopPlatformBitmap(mutableBitmap)
+            bitmapCache[uriString] = platformBitmap
+            platformBitmap
+        } catch (e: Exception) {
+            println("DesktopMediaProvider: Error loading bitmap: ${e.message}")
+            null
+        }
+    }
+
+    override suspend fun loadFrame(uriString: String, timeSec: Float, targetW: Int, targetH: Int): PlatformBitmap? {
+        // Desktop doesn't support frame-by-frame video extraction yet.
+        // Returning null allows the RenderEngine to show the placeholder gizmo.
+        return null 
+    }
+
+    override fun clearCache() {
+        bitmapCache.clear()
+    }
+    
+    override fun trimCache(level: Int) {
+        if (bitmapCache.size > 20) bitmapCache.clear()
+    }
+}
+
+class DesktopPreviewCache : PreviewCache {
+    private val cache = mutableMapOf<String, PlatformBitmap>()
+
+    override fun isFrameCached(projectId: Long, frameIndex: Int): Boolean {
+        return cache.containsKey("$projectId@$frameIndex")
+    }
+
+    override fun getCachedFrame(projectId: Long, frameIndex: Int): PlatformBitmap? {
+        return cache["$projectId@$frameIndex"]
+    }
+
+    override fun putCachedFrame(projectId: Long, frameIndex: Int, bitmap: PlatformBitmap) {
+        cache["$projectId@$frameIndex"] = bitmap
+        if (cache.size > 100) {
+            cache.keys.firstOrNull()?.let { cache.remove(it) }
+        }
+    }
+
+    override fun invalidateTimeRange(projectId: Long, startTime: Float, endTime: Float, fps: Int) {
+        invalidate(projectId)
+    }
+
+    override fun invalidate(projectId: Long) {
+        val toRemove = cache.keys.filter { it.startsWith("$projectId@") }
+        toRemove.forEach { cache.remove(it) }
+    }
+
+    override fun clearProject(projectId: Long) {
+        invalidate(projectId)
+    }
+}

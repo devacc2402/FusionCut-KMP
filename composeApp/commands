@@ -1,0 +1,4 @@
+to build msi:
+./gradlew :composeApp:packageMsi
+to run test:
+./gradlew :composeApp:run

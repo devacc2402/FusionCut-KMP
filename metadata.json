@@ -1,0 +1,6 @@
+{
+  "name": "Fusion Cut",
+  "description": "Motion graphics and video editor with smooth timeline, multi-layer canvas, transform controls, shapes, and media imports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
