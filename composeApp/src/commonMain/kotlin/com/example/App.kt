@@ -2,8 +2,6 @@ package com.example
 
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -61,10 +59,10 @@ fun AppNavigation(module: AppModule) {
             arguments = listOf(
                 navArgument("projectId") { type = NavType.LongType }
             ),
-            enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
-            exitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() },
+            enterTransition = { fadeIn() },
+            exitTransition = { fadeOut() },
             popEnterTransition = { fadeIn() },
-            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+            popExitTransition = { fadeOut() }
         ) { backStackEntry ->
             val projectId = backStackEntry.arguments?.getLong("projectId") ?: 0L
             EditorScreen(

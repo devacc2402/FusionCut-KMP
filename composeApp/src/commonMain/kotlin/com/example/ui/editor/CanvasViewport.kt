@@ -3,12 +3,22 @@ package com.example.ui.editor
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,10 +35,16 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.engine.FusionEngineProvider
 import com.example.model.Layer
 import com.example.ui.util.toComposeColor
+import com.example.ui.util.withAlpha
+import com.example.util.PlatformBitmapFactory
+import com.example.util.PreviewCache
 import com.example.model.LayerType
 import com.example.model.Project
 import com.example.ui.theme.NeonCyan
@@ -44,6 +60,7 @@ fun CanvasViewport(
     selectedLayerId: String?,
     onSelectLayer: (String?) -> Unit,
     bitmaps: Map<String, ImageBitmap> = emptyMap(),
+    previewCache: PreviewCache? = null,
     frameVersion: Long = 0L,
     modifier: Modifier = Modifier
 ) {
@@ -56,7 +73,7 @@ fun CanvasViewport(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF090C11.toInt()))
+            .background(0xFF090C11L.toComposeColor())
             .padding(10.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -107,9 +124,9 @@ fun CanvasViewport(
         Box(
             modifier = Modifier
                 .size(displayWidthDp, displayHeightDp)
-                .shadow(elevation = 12.dp, shape = RoundedCornerShape(6.dp), spotColor = NeonCyan.copy(alpha = 0.25f))
+                .shadow(elevation = 12.dp, shape = RoundedCornerShape(6.dp), spotColor = NeonCyan.withAlpha(0.25f))
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xFF10141E.toInt()))
+                .background(0xFF10141EL.toComposeColor())
                 .pointerInput(displayWidthPx, displayHeightPx, scaleFactor) {
                     detectTapGestures { tapOffset ->
                         val time = currentTimeVal.value
@@ -132,24 +149,76 @@ fun CanvasViewport(
             val version = currentFrameVersion.value
             val engine = remember { FusionEngineProvider.getEngine() }
 
+            val targetW = displayWidthPx.toInt().coerceAtLeast(1)
+            val targetH = displayHeightPx.toInt().coerceAtLeast(1)
+
+            val framePixels = remember(targetW, targetH) { IntArray(targetW * targetH) }
+            val frameBitmap = remember(targetW, targetH) { PlatformBitmapFactory.create(targetW, targetH) }
+
             Canvas(modifier = Modifier.fillMaxSize()) {
                 @Suppress("UNUSED_VARIABLE")
                 val v = version
 
-                // Render Background Color fill
-                drawRect(
-                    color = project.backgroundColor.toComposeColor(),
-                    topLeft = Offset.Zero,
-                    size = size
+                // Render frame through C++ Native Engine
+                engine.renderFrame(
+                    project = project,
+                    layers = layers,
+                    timeSec = currentTime,
+                    targetWidth = targetW,
+                    targetHeight = targetH,
+                    outPixels = framePixels
                 )
+
+                // Update bitmap pixels and draw onto canvas
+                frameBitmap.setPixels(framePixels)
+                drawImage(
+                    image = frameBitmap.asImageBitmap(),
+                    dstSize = IntSize(size.width.toInt(), size.height.toInt())
+                )
+
+                // Cache strictly rendered frame in PreviewCache for render status bar
+                if (previewCache != null) {
+                    val currentFps = project.fps.coerceAtLeast(1)
+                    val frameIdx = (currentTime * currentFps).toInt()
+                    previewCache.putCachedFrame(project.id, frameIdx, frameBitmap)
+                }
 
                 // 3. Subtle Outer Border
                 drawRect(
-                    color = Color(0xFF263045.toInt()),
+                    color = 0xFF263045L.toComposeColor(),
                     topLeft = Offset.Zero,
                     size = size,
                     style = Stroke(width = 1.5f)
                 )
+            }
+
+            // Big Red Warning Banner displayed when Native C++ Engine is unavailable/failed
+            if (engine.isFallbackActive()) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .background(0xFFDC2626L.toComposeColor())
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Engine Warning",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Render engine could not be loaded. You are now using a slower fallback option, please reload the app.",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        )
+                    )
+                }
             }
         }
     }

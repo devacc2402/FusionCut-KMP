@@ -60,7 +60,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 8
-        versionName = "1.0.7"
+        versionName = "1.1.0"
         
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -137,7 +137,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "FusionCut"
-            packageVersion = "1.0.95"
+            packageVersion = "1.1.0"
             
             windows {
                 perUserInstall = false
@@ -178,47 +178,52 @@ tasks.register("compileNativeWindows") {
         if (System.getProperty("os.name").contains("Windows", ignoreCase = true)) {
             val nativeSrcDir = file("src/jvmMain/cpp")
             val buildDir = file("build/native/windows")
-            
-            if (buildDir.exists()) buildDir.deleteRecursively()
+            val resDir = file("src/jvmMain/resources")
             buildDir.mkdirs()
+            resDir.mkdirs()
 
             println("FusionCut: Compiling C++ Render Engine for Windows...")
-            
-            var cmakeExecutable = "cmake"
-            val isGlobalCmakeAvailable = try {
-                val p = ProcessBuilder("cmake", "--version").start()
-                p.waitFor() == 0
-            } catch (e: Exception) {
-                false
-            }
-            
-            if (!isGlobalCmakeAvailable) {
-                val userHome = System.getProperty("user.home")
-                val sdkCmake = file("$userHome/AppData/Local/Android/Sdk/cmake/3.22.1/bin/cmake.exe")
-                if (sdkCmake.exists()) {
-                    cmakeExecutable = sdkCmake.absolutePath.replace("\\", "/")
-                }
-            }
-            
-            val javaHome = System.getProperty("java.home").replace("\\", "/")
+
+            val sdkCmake = file("${System.getProperty("user.home")}/AppData/Local/Android/Sdk/cmake/3.22.1/bin/cmake.exe")
+            val sdkNinja = file("${System.getProperty("user.home")}/AppData/Local/Android/Sdk/cmake/3.22.1/bin/ninja.exe")
+
+            val cmakePath = if (sdkCmake.exists()) sdkCmake.absolutePath else "cmake"
+            val ninjaPath = if (sdkNinja.exists()) sdkNinja.absolutePath else "ninja"
+
+            val vcvarsFile = file("C:/Program Files/Microsoft Visual Studio/18/Community/VC/Auxiliary/Build/vcvars64.bat").takeIf { it.exists() }
+                ?: file("C:/Program Files (x86)/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvars64.bat").takeIf { it.exists() }
+
             try {
-                providers.exec {
-                    commandLine(cmakeExecutable, "-S", nativeSrcDir.absolutePath.replace("\\", "/"), "-B", buildDir.absolutePath.replace("\\", "/"), "-DJAVA_HOME=$javaHome")
-                }.result.get()
-                providers.exec {
-                    commandLine(cmakeExecutable, "--build", buildDir.absolutePath.replace("\\", "/"), "--config", "Release")
-                }.result.get()
+                if (vcvarsFile != null) {
+                    val batchScript = file("build/build_msvc.bat")
+                    batchScript.parentFile.mkdirs()
+                    batchScript.writeText("""
+                        @echo off
+                        call "${vcvarsFile.absolutePath}"
+                        set CMAKE="${cmakePath}"
+                        set NINJA="${ninjaPath}"
+                        set SRCDIR="${nativeSrcDir.absolutePath}"
+                        set BUILDDIR="${buildDir.absolutePath}"
+
+                        if not exist %BUILDDIR% mkdir %BUILDDIR%
+
+                        %CMAKE% -G "Ninja" -DCMAKE_MAKE_PROGRAM=%NINJA% -S %SRCDIR% -B %BUILDDIR%
+                        %CMAKE% --build %BUILDDIR%
+                    """.trimIndent())
+
+                    providers.exec {
+                        commandLine("cmd", "/c", batchScript.absolutePath)
+                    }.result.get()
+                }
             } catch (exc: Exception) {
-                println("FusionCut: C++ compilation skipped or requires a host C++ compiler ($exc).")
+                println("FusionCut: C++ compilation note: $exc")
             }
 
-            val dllFile = file("${buildDir.absolutePath}/Release/fusion_engine.dll")
+            val dllFile = file("${buildDir.absolutePath}/fusion_engine.dll")
             if (dllFile.exists()) {
-                val destDir = file("src/jvmMain/resources")
-                destDir.mkdirs()
-                val targetDll = file("${destDir.absolutePath}/fusion_engine.dll")
+                val targetDll = file("${resDir.absolutePath}/fusion_engine.dll")
                 dllFile.copyTo(targetDll, overwrite = true)
-                println("FusionCut: Native DLL successfully bundled to resources.")
+                println("FusionCut: Native DLL successfully bundled to resources (${targetDll.length()} bytes).")
                 signWindowsBinary(targetDll)
             } else {
                 println("FusionCut WARNING: DLL not found after build at ${dllFile.absolutePath}")
@@ -252,5 +257,29 @@ tasks.matching { it.name.startsWith("package") && it.name.endsWith("Msi") }.conf
             }
         }
     }
+}
+
+// Automatically generate/sync AppVersion Kotlin actual files from build.gradle.kts settings
+tasks.register("syncAppVersion") {
+    doLast {
+        val androidVersion = android.defaultConfig.versionName ?: "1.0.0"
+        val desktopVersion = compose.desktop.application.nativeDistributions.packageVersion ?: "1.0.0"
+
+        val androidFile = file("../shared/src/androidMain/kotlin/com/example/util/AppVersion.kt")
+        if (androidFile.parentFile.exists()) {
+            androidFile.writeText("package com.example.util\n\nactual object AppVersion {\n    actual val name: String = \"$androidVersion\"\n}\n")
+        }
+
+        val jvmFile = file("../shared/src/jvmMain/kotlin/com/example/util/AppVersion.kt")
+        if (jvmFile.parentFile.exists()) {
+            jvmFile.writeText("package com.example.util\n\nactual object AppVersion {\n    actual val name: String = \"$desktopVersion\"\n}\n")
+        }
+
+        println("FusionCut: AppVersion synced (Android: $androidVersion, Desktop: $desktopVersion)")
+    }
+}
+
+tasks.matching { it.name.startsWith("compileKotlin") }.configureEach {
+    dependsOn("syncAppVersion")
 }
 

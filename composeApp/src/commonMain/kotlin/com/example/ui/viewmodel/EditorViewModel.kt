@@ -50,7 +50,9 @@ class EditorViewModel(
 
     private val engine: IFusionEngine = FusionEngineProvider.getEngine()
 
-    val project: StateFlow<Project?>
+    private val _project = MutableStateFlow<Project?>(null)
+    val project: StateFlow<Project?> = _project.asStateFlow()
+
     private val _layers = MutableStateFlow<List<Layer>>(emptyList())
     val layers: StateFlow<List<Layer>> = _layers.asStateFlow()
 
@@ -89,14 +91,25 @@ class EditorViewModel(
     val frameVersion: StateFlow<Long> = _frameVersion.asStateFlow()
 
     init {
-        project = repository.getProject(projectId).stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
-
-        // Sync from repository into memory
+        // Fetch project immediately and collect updates
         viewModelScope.launch {
+            val direct = repository.getProjectDirect(projectId)
+            if (direct != null) {
+                _project.value = direct
+            }
+            repository.getProject(projectId).collect { dbProj ->
+                if (dbProj != null) {
+                    _project.value = dbProj
+                }
+            }
+        }
+
+        // Fetch layers immediately and collect updates
+        viewModelScope.launch {
+            val directLayers = repository.getLayersDirect(projectId)
+            if (directLayers.isNotEmpty() && _layers.value.isEmpty()) {
+                _layers.value = directLayers
+            }
             repository.getLayers(projectId).collect { dbLayers ->
                 if (_layers.value.isEmpty() || pendingSaveJob?.isActive != true) {
                     _layers.value = dbLayers
@@ -734,7 +747,8 @@ class EditorViewModel(
         viewModelScope.launch {
             val localUri = mediaProvider.copyMediaToLocalStorage(projectId, uriString, isVideo)
             val meta = mediaProvider.getMediaMetadata(localUri)
-            val isRealVideo = isVideo || meta?.isVideo == true || uriString.contains("video", ignoreCase = true) || uriString.endsWith(".mp4", ignoreCase = true)
+            val videoExtensions = listOf(".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v")
+            val isRealVideo = isVideo || meta?.isVideo == true || videoExtensions.any { uriString.endsWith(it, ignoreCase = true) }
 
             var baseW = 400f
             var baseH = 400f

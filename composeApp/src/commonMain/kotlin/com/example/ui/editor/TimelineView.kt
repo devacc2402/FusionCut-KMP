@@ -28,6 +28,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.GraphicEq
+import com.example.ui.theme.NeonEmerald
+import com.example.ui.theme.SurfaceBorderDark
+import com.example.ui.theme.SurfaceContainerDark
+import com.example.ui.util.withAlpha
+import com.example.util.PreviewCache
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Videocam
@@ -50,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -106,6 +112,7 @@ fun TimelineView(
     onDeleteLayer: (String) -> Unit,
     onOpenAddLayer: () -> Unit = {},
     onCommitTiming: ((String) -> Unit)? = null,
+    previewCache: PreviewCache? = null,
     modifier: Modifier = Modifier
 ) {
     var zoomScale by remember { mutableFloatStateOf(80f) }
@@ -124,7 +131,7 @@ fun TimelineView(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0C0E14))
+            .background(Color(0xFF0C0E14.toInt()))
     ) {
         val availableWidthPx = constraints.maxWidth.toFloat()
         val availableHeightPx = constraints.maxHeight.toFloat()
@@ -139,7 +146,7 @@ fun TimelineView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(28.dp)
-                    .background(Color(0xFF141722)),
+                    .background(Color(0xFF141722.toInt())),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -217,7 +224,7 @@ fun TimelineView(
                     modifier = Modifier
                         .padding(end = 6.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF1E2333))
+                        .background(Color(0xFF1E2333.toInt()))
                         .padding(horizontal = 4.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -258,6 +265,76 @@ fun TimelineView(
                             .clickable { zoomScale = (zoomScale * 1.35f).coerceIn(8f, 350f) }
                             .padding(horizontal = 4.dp, vertical = 2.dp)
                     )
+                }
+            }
+
+            // Global Composition Render Cache Status Bar (After Effects / NodeVideo Style)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(SurfaceContainerDark)
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val pps = zoomScale.coerceAtLeast(8f)
+                    val projDuration = project.durationSeconds.coerceAtLeast(0.1f)
+                    val currentFps = project.fps.coerceAtLeast(1)
+                    val totalProjectFrames = (projDuration * currentFps).toInt().coerceAtLeast(1)
+
+                    val startX = centerX - currentTime * pps
+                    val endX = centerX + (projDuration - currentTime) * pps
+
+                    val visibleStartX = startX.coerceIn(0f, size.width)
+                    val visibleEndX = endX.coerceIn(0f, size.width)
+
+                    if (visibleEndX > visibleStartX) {
+                        // Background track (Uncached time range)
+                        drawRect(
+                            color = SurfaceBorderDark,
+                            topLeft = Offset(visibleStartX, 0f),
+                            size = Size(visibleEndX - visibleStartX, size.height)
+                        )
+
+                        // Draw cached/rendered frame segments for active layers behind playhead line and PreviewCache
+                        var rangeStartFrame: Int? = null
+
+                        for (f in 0..totalProjectFrames) {
+                            val timeSec = f.toFloat() / currentFps
+                            val isPlayedLayerTime = layers.any { l -> l.isVisible && timeSec >= l.startTime && timeSec <= l.endTime } && (timeSec <= currentTime + 0.05f)
+                            val isCached = isPlayedLayerTime || (previewCache?.isFrameCached(project.id, f) == true)
+
+                            if (isCached && rangeStartFrame == null) {
+                                rangeStartFrame = f
+                            } else if (!isCached && rangeStartFrame != null) {
+                                val sSec = rangeStartFrame.toFloat() / currentFps
+                                val eSec = f.toFloat() / currentFps
+                                val x1 = (centerX + (sSec - currentTime) * pps).coerceIn(visibleStartX, visibleEndX)
+                                val x2 = (centerX + (eSec - currentTime) * pps).coerceIn(visibleStartX, visibleEndX)
+                                if (x2 > x1) {
+                                    drawRect(
+                                        color = NeonEmerald,
+                                        topLeft = Offset(x1, 0f),
+                                        size = Size(x2 - x1, size.height)
+                                    )
+                                }
+                                rangeStartFrame = null
+                            }
+                        }
+
+                        if (rangeStartFrame != null) {
+                            val sSec = rangeStartFrame.toFloat() / currentFps
+                            val eSec = projDuration
+                            val x1 = (centerX + (sSec - currentTime) * pps).coerceIn(visibleStartX, visibleEndX)
+                            val x2 = (centerX + (eSec - currentTime) * pps).coerceIn(visibleStartX, visibleEndX)
+                            if (x2 > x1) {
+                                drawRect(
+                                    color = NeonEmerald,
+                                    topLeft = Offset(x1, 0f),
+                                    size = Size(x2 - x1, size.height)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -391,14 +468,14 @@ fun TimelineView(
                         val snapPx = centerX + (snapT - currentTime) * zoomScale
                         if (snapPx in 0f..size.width) {
                             drawLine(
-                                color = Color(0xFF00E5FF),
+                                color = Color(0xFF00E5FF.toInt()),
                                 start = Offset(snapPx, 0f),
                                 end = Offset(snapPx, size.height),
                                 strokeWidth = 2.dp.toPx()
                             )
                             // Top snapping diamond indicator
                             drawCircle(
-                                color = Color(0xFF00E5FF),
+                                color = Color(0xFF00E5FF.toInt()),
                                 radius = 4.dp.toPx(),
                                 center = Offset(snapPx, 4.dp.toPx())
                             )
@@ -448,8 +525,8 @@ private fun CapCutCenterTrackRow(
         LayerType.TEXT -> NeonAmber
         LayerType.IMAGE -> NeonEmerald
         LayerType.VIDEO -> NeonMagenta
-        LayerType.SOLID -> Color(0xFF9D65F5)
-        LayerType.AUDIO -> Color(0xFF00E5FF)
+        LayerType.SOLID -> Color(0xFF9D65F5.toInt())
+        LayerType.AUDIO -> Color(0xFF00E5FF.toInt())
     }
 
     val typeIcon: ImageVector = when (layer.type) {
@@ -491,8 +568,8 @@ private fun CapCutCenterTrackRow(
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp)
-            .background(if (isSelected) Color(0xFF141824) else Color.Transparent)
-            .border(width = 0.5.dp, color = Color(0xFF181C28))
+            .background(if (isSelected) Color(0xFF141824.toInt()) else Color.Transparent)
+            .border(width = 0.5.dp, color = Color(0xFF181C28.toInt()))
             // Static track-level gesture detector (Keyed ONLY by layer.id so it is never interrupted)
             .pointerInput(layer.id) {
                 awaitEachGesture {
@@ -668,12 +745,12 @@ private fun CapCutCenterTrackRow(
                 .clip(RoundedCornerShape(8.dp))
                 .background(
                     if (isSelected || activeDragMode == TrackGestureMode.DRAG_BODY || activeDragMode == TrackGestureMode.TRIM_LEFT || activeDragMode == TrackGestureMode.TRIM_RIGHT)
-                        accentColor.copy(alpha = 0.95f)
-                    else accentColor.copy(alpha = 0.65f)
+                        accentColor.withAlpha(0.95f)
+                    else accentColor.withAlpha(0.65f)
                 )
                 .border(
                     width = if (isSelected || activeDragMode != TrackGestureMode.NONE && activeDragMode != TrackGestureMode.SCRUB_TIMELINE) 2.dp else 1.dp,
-                    color = if (isSelected || activeDragMode != TrackGestureMode.NONE && activeDragMode != TrackGestureMode.SCRUB_TIMELINE) Color.White else accentColor.copy(alpha = 0.8f),
+                    color = if (isSelected || activeDragMode != TrackGestureMode.NONE && activeDragMode != TrackGestureMode.SCRUB_TIMELINE) Color.White else accentColor.withAlpha(0.8f),
                     shape = RoundedCornerShape(8.dp)
                 )
         ) {
@@ -715,7 +792,7 @@ private fun CapCutCenterTrackRow(
                     Text(
                         text = "${String.format(Locale.US, "%.1f", durationSec)}s",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = Color.White.copy(alpha = 0.95f),
+                            color = Color.White.withAlpha(0.95f),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         ),
@@ -731,9 +808,9 @@ private fun CapCutCenterTrackRow(
                     .width(24.dp)
                     .fillMaxHeight()
                     .background(
-                        if (activeDragMode == TrackGestureMode.TRIM_LEFT) Color.White.copy(alpha = 0.60f)
-                        else if (isSelected) Color.White.copy(alpha = 0.35f)
-                        else Color.White.copy(alpha = 0.18f)
+                        if (activeDragMode == TrackGestureMode.TRIM_LEFT) Color.White.withAlpha(0.60f)
+                        else if (isSelected) Color.White.withAlpha(0.35f)
+                        else Color.White.withAlpha(0.18f)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -753,9 +830,9 @@ private fun CapCutCenterTrackRow(
                     .width(24.dp)
                     .fillMaxHeight()
                     .background(
-                        if (activeDragMode == TrackGestureMode.TRIM_RIGHT) Color.White.copy(alpha = 0.60f)
-                        else if (isSelected) Color.White.copy(alpha = 0.35f)
-                        else Color.White.copy(alpha = 0.18f)
+                        if (activeDragMode == TrackGestureMode.TRIM_RIGHT) Color.White.withAlpha(0.60f)
+                        else if (isSelected) Color.White.withAlpha(0.35f)
+                        else Color.White.withAlpha(0.18f)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -823,7 +900,7 @@ private fun drawCapCutRuler(
                     val x2 = centerX + (eTime - currentTime) * pixelsPerSecond
                     val w = (x2 - x1).coerceAtLeast(1f)
                     drawScope.drawRect(
-                        color = Color(0xFF00E676),
+                        color = Color(0xFF00E676.toInt()),
                         topLeft = Offset(x1, size.height - barHeight),
                         size = androidx.compose.ui.geometry.Size(w, barHeight)
                     )
@@ -851,7 +928,7 @@ private fun drawCapCutRuler(
         val x = centerX + (t - currentTime) * pixelsPerSecond
         val isMajor = if (stepSeconds < 1f) (t % 1.0f) == 0.0f else (t % (stepSeconds * 2)) == 0.0f
         val tickHeight = if (isMajor) size.height * 0.70f else size.height * 0.35f
-        val tickColor = if (isMajor) Color.White.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.28f)
+        val tickColor = if (isMajor) Color.White.withAlpha(0.85f) else Color.White.withAlpha(0.28f)
 
         drawScope.drawLine(
             color = tickColor,
@@ -863,7 +940,7 @@ private fun drawCapCutRuler(
     }
 
     drawScope.drawLine(
-        color = Color(0xFF262D3D),
+        color = Color(0xFF262D3D.toInt()),
         start = Offset(0f, size.height),
         end = Offset(size.width, size.height),
         strokeWidth = 1f

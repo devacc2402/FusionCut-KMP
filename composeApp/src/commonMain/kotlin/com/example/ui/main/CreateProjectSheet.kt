@@ -28,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import com.example.ui.util.withAlpha
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -184,7 +185,7 @@ fun CreateProjectSheet(
                             Text(
                                 text = "${rate} FPS",
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    color = if (isSel) Color(0xFF090B10) else TextPrimary,
+                                    color = if (isSel) Color(0xFF090B10.toInt()) else TextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                             )
@@ -207,7 +208,7 @@ fun CreateProjectSheet(
                                 .background(colorVal.toComposeColor())
                                 .border(
                                     width = if (isSel) 3.dp else 1.dp,
-                                    color = if (isSel) NeonCyan else Color.White.copy(alpha = 0.3f),
+                                    color = if (isSel) NeonCyan else Color.White.withAlpha(0.3f),
                                     shape = CircleShape
                                 )
                                 .clickable { bgColor = colorVal }
@@ -230,7 +231,7 @@ fun CreateProjectSheet(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSel) engineColor.copy(alpha = 0.2f) else SurfaceContainerDark)
+                                .background(if (isSel) engineColor.withAlpha(0.2f) else SurfaceContainerDark)
                                 .border(
                                     width = if (isSel) 1.5.dp else 1.dp,
                                     color = if (isSel) engineColor else SurfaceBorderDark,
@@ -252,7 +253,7 @@ fun CreateProjectSheet(
                                     Text(
                                         text = "Highly Optimized",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = if (isSel) engineColor.copy(alpha = 0.7f) else TextSecondary,
+                                            color = if (isSel) engineColor.withAlpha(0.7f) else TextSecondary,
                                             fontSize = 9.sp
                                         )
                                     )
@@ -302,7 +303,7 @@ private fun RatioSelectorCard(
         modifier = Modifier
             .width(100.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) NeonCyan.copy(alpha = 0.15f) else SurfaceContainerDark)
+            .background(if (isSelected) NeonCyan.withAlpha(0.15f) else SurfaceContainerDark)
             .border(
                 width = if (isSelected) 1.5.dp else 1.dp,
                 color = if (isSelected) NeonCyan else SurfaceBorderDark,
@@ -333,7 +334,7 @@ private fun RatioSelectorCard(
                 modifier = Modifier
                     .size(width = w.dp, height = h.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(if (isSelected) NeonCyan else TextSecondary.copy(alpha = 0.3f))
+                    .background(if (isSelected) NeonCyan else TextSecondary.withAlpha(0.3f))
                     .border(width = 1.dp, color = if (isSelected) NeonCyan else TextSecondary, shape = RoundedCornerShape(2.dp))
             )
         }

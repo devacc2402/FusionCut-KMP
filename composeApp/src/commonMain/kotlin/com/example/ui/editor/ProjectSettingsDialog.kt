@@ -122,7 +122,7 @@ fun ProjectSettingsDialog(
                             Text(
                                 text = "${rate} FPS",
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    color = if (isSel) Color(0xFF090B10) else TextPrimary,
+                                    color = if (isSel) Color(0xFF090B10.toInt()) else TextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                             )
@@ -156,7 +156,7 @@ fun ProjectSettingsDialog(
                             Text(
                                 text = "${dur.toInt()}s",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = if (isSel) Color(0xFF090B10) else TextPrimary,
+                                    color = if (isSel) Color(0xFF090B10.toInt()) else TextPrimary,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp
                                 )
@@ -195,7 +195,7 @@ fun ProjectSettingsDialog(
                     onSave(title, fps, bgColor, selectedDuration)
                     onDismiss()
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = NeonCyan, contentColor = Color(0xFF090B10)),
+                colors = ButtonDefaults.buttonColors(containerColor = NeonCyan, contentColor = Color(0xFF090B10.toInt())),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.testTag("save_project_settings_btn")
             ) {

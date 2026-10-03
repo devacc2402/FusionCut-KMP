@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import com.example.ui.util.withAlpha
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MoreVert
@@ -78,6 +79,7 @@ import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.util.toComposeColor
 import com.example.ui.viewmodel.ProjectsViewModel
+import com.example.util.AppVersion
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -164,7 +166,7 @@ fun MainMenuScreen(
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = if (isSel) Color(0xFF090B10) else TextSecondary,
+                                color = if (isSel) Color(0xFF090B10.toInt()) else TextSecondary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.sp
                             )
@@ -206,6 +208,7 @@ fun MainMenuScreen(
         CreateProjectSheet(
             onDismiss = { showCreateSheet = false },
             onCreate = { title, ratio, fps, bg, engine ->
+                showCreateSheet = false
                 viewModel.createProject(
                     title = title,
                     aspectRatio = ratio,
@@ -286,7 +289,7 @@ private fun MainMenuHeader() {
                 modifier = Modifier
                     .size(38.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(NeonCyan.copy(alpha = 0.2f))
+                    .background(NeonCyan.withAlpha(0.2f))
                     .border(width = 1.dp, color = NeonCyan, shape = RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -326,7 +329,7 @@ private fun MainMenuHeader() {
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Text(
-                text = "v0.0.1",
+                text = "v${AppVersion.name}",
                 style = MaterialTheme.typography.labelSmall.copy(
                     color = NeonEmerald,
                     fontWeight = FontWeight.Bold,
@@ -371,8 +374,8 @@ private fun ProjectGridCard(
                 modifier = Modifier
                     .size(width = if (isPortrait) 40.dp else 70.dp, height = if (isPortrait) 70.dp else 40.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(NeonCyan.copy(alpha = 0.15f))
-                    .border(width = 1.dp, color = NeonCyan.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp)),
+                    .background(NeonCyan.withAlpha(0.15f))
+                    .border(width = 1.dp, color = NeonCyan.withAlpha(0.6f), shape = RoundedCornerShape(4.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Movie, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(18.dp))
@@ -384,7 +387,7 @@ private fun ProjectGridCard(
                     .align(Alignment.TopStart)
                     .padding(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Black.copy(alpha = 0.7f))
+                    .background(Color.Black.withAlpha(0.7f))
                     .padding(horizontal = 5.dp, vertical = 2.dp)
             ) {
                 Text(
@@ -399,7 +402,7 @@ private fun ProjectGridCard(
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(NeonEmerald.copy(alpha = 0.2f))
+                    .background(NeonEmerald.withAlpha(0.2f))
                     .border(width = 0.5.dp, color = NeonEmerald, shape = RoundedCornerShape(4.dp))
                     .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
@@ -509,7 +512,7 @@ private fun EmptyProjectsState(onCreateClick: () -> Unit) {
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(NeonCyan.copy(alpha = 0.15f)),
+                    .background(NeonCyan.withAlpha(0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.VideoLibrary, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(32.dp))
@@ -571,7 +574,7 @@ private fun RenameProjectDialog(
         confirmButton = {
             Button(
                 onClick = { onRename(newTitle) },
-                colors = ButtonDefaults.buttonColors(containerColor = NeonCyan, contentColor = Color(0xFF090B10)),
+                colors = ButtonDefaults.buttonColors(containerColor = NeonCyan, contentColor = Color(0xFF090B10.toInt())),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.testTag("confirm_rename_btn")
             ) {

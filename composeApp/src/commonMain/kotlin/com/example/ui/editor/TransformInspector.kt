@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Link
+import com.example.ui.util.withAlpha
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
@@ -168,7 +169,7 @@ fun TransformInspector(
                             .width(36.dp)
                             .height(4.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF556075))
+                            .background(Color(0xFF556075.toInt()))
                     )
                 }
             }
@@ -191,13 +192,13 @@ fun TransformInspector(
                         LayerType.TEXT -> NeonAmber
                         LayerType.IMAGE -> NeonEmerald
                         LayerType.VIDEO -> NeonMagenta
-                        LayerType.SOLID -> Color(0xFF9D65F5)
-                        LayerType.AUDIO -> Color(0xFF00E5FF)
+                        LayerType.SOLID -> Color(0xFF9D65F5.toInt())
+                        LayerType.AUDIO -> Color(0xFF00E5FF.toInt())
                     }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(badgeColor.copy(alpha = 0.2f))
+                            .background(badgeColor.withAlpha(0.2f))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
@@ -430,7 +431,7 @@ private fun CompactTimingControls(
                     Button(
                         onClick = { onExtendDuration(-1f) },
                         modifier = Modifier.weight(1f).height(30.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D), contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D.toInt()), contentColor = Color.White),
                         contentPadding = PaddingValues(0.dp),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -439,7 +440,7 @@ private fun CompactTimingControls(
                     Button(
                         onClick = { onExtendDuration(1f) },
                         modifier = Modifier.weight(1f).height(30.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D), contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D.toInt()), contentColor = Color.White),
                         contentPadding = PaddingValues(0.dp),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -448,7 +449,7 @@ private fun CompactTimingControls(
                     Button(
                         onClick = { onExtendDuration(5f) },
                         modifier = Modifier.weight(1f).height(30.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D), contentColor = NeonCyan),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D.toInt()), contentColor = NeonCyan),
                         contentPadding = PaddingValues(0.dp),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -457,7 +458,7 @@ private fun CompactTimingControls(
                     Button(
                         onClick = { onExtendDuration(10f) },
                         modifier = Modifier.weight(1f).height(30.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D), contentColor = NeonCyan),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D.toInt()), contentColor = NeonCyan),
                         contentPadding = PaddingValues(0.dp),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -490,7 +491,7 @@ private fun CompactTimingControls(
                         Button(
                             onClick = { onUpdateTiming((layer.startTime - 0.5f).coerceAtLeast(0f), layer.endTime) },
                             modifier = Modifier.weight(1f).height(26.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2232), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2232.toInt()), contentColor = Color.White),
                             contentPadding = PaddingValues(0.dp),
                             shape = RoundedCornerShape(4.dp)
                         ) {
@@ -499,7 +500,7 @@ private fun CompactTimingControls(
                         Button(
                             onClick = { onUpdateTiming((layer.startTime + 0.5f).coerceAtMost(layer.endTime - 0.1f), layer.endTime) },
                             modifier = Modifier.weight(1f).height(26.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2232), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2232.toInt()), contentColor = Color.White),
                             contentPadding = PaddingValues(0.dp),
                             shape = RoundedCornerShape(4.dp)
                         ) {
@@ -527,7 +528,7 @@ private fun CompactTimingControls(
                         Button(
                             onClick = { onUpdateTiming(layer.startTime, (layer.endTime - 0.5f).coerceAtLeast(layer.startTime + 0.1f)) },
                             modifier = Modifier.weight(1f).height(26.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2232), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2232.toInt()), contentColor = Color.White),
                             contentPadding = PaddingValues(0.dp),
                             shape = RoundedCornerShape(4.dp)
                         ) {
@@ -536,7 +537,7 @@ private fun CompactTimingControls(
                         Button(
                             onClick = { onUpdateTiming(layer.startTime, layer.endTime + 0.5f) },
                             modifier = Modifier.weight(1f).height(26.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2232), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2232.toInt()), contentColor = Color.White),
                             contentPadding = PaddingValues(0.dp),
                             shape = RoundedCornerShape(4.dp)
                         ) {
@@ -552,7 +553,7 @@ private fun CompactTimingControls(
             Button(
                 onClick = onMatchProjectDuration,
                 modifier = Modifier.fillMaxWidth().height(36.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = NeonCyan.copy(alpha = 0.2f), contentColor = NeonCyan),
+                colors = ButtonDefaults.buttonColors(containerColor = NeonCyan.withAlpha(0.2f), contentColor = NeonCyan),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(14.dp))
@@ -567,7 +568,7 @@ private fun CompactTimingControls(
                 Button(
                     onClick = onTrimStartToPlayhead,
                     modifier = Modifier.weight(1f).height(32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D), contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D.toInt()), contentColor = Color.White),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                     shape = RoundedCornerShape(6.dp)
                 ) {
@@ -577,7 +578,7 @@ private fun CompactTimingControls(
                 Button(
                     onClick = onTrimEndToPlayhead,
                     modifier = Modifier.weight(1f).height(32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D), contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222B3D.toInt()), contentColor = Color.White),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                     shape = RoundedCornerShape(6.dp)
                 ) {
@@ -588,7 +589,7 @@ private fun CompactTimingControls(
             Button(
                 onClick = onSplitAtPlayhead,
                 modifier = Modifier.fillMaxWidth().height(32.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B203D), contentColor = NeonMagenta),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B203D.toInt()), contentColor = NeonMagenta),
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text("Split Clip at Current Playhead", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
@@ -922,7 +923,7 @@ private fun CompactStyleControls(
                             label = { Text(st.name.replace("_", " "), fontSize = 10.sp) },
                             modifier = Modifier.height(26.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = NeonCyan.copy(alpha = 0.25f),
+                                selectedContainerColor = NeonCyan.withAlpha(0.25f),
                                 selectedLabelColor = NeonCyan,
                                 containerColor = SurfaceVariantDark,
                                 labelColor = TextSecondary
@@ -1031,7 +1032,7 @@ private fun CompactColorPalette(
                         .background(colorVal.toComposeColor())
                         .border(
                             width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.2f),
+                            color = if (isSelected) Color.White else Color.White.withAlpha(0.2f),
                             shape = CircleShape
                         )
                         .clickable { onColorSelect(colorVal) }

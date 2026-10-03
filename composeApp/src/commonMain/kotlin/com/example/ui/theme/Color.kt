@@ -1,25 +1,25 @@
 package com.example.ui.theme
 
-import androidx.compose.ui.graphics.Color
+import com.example.ui.util.toComposeColor
 
-// Fusion Cut Pro Dark Aesthetic - Safe 32-bit ARGB Int conversions (prevents Skiko ColorSpace 20 crashes)
-val BackgroundDark = Color(0xFF090B10.toInt())
-val SurfaceDark = Color(0xFF10141D.toInt())
-val SurfaceVariantDark = Color(0xFF171D2B.toInt())
-val SurfaceContainerDark = Color(0xFF1E2536.toInt())
-val SurfaceBorderDark = Color(0xFF2B3448.toInt())
+// Fusion Cut Pro Dark Aesthetic - Safe (r, g, b, a) conversions (prevents Skiko ColorSpace 20 crashes)
+val BackgroundDark = 0xFF090B10L.toComposeColor()
+val SurfaceDark = 0xFF10141DL.toComposeColor()
+val SurfaceVariantDark = 0xFF171D2BL.toComposeColor()
+val SurfaceContainerDark = 0xFF1E2536L.toComposeColor()
+val SurfaceBorderDark = 0xFF2B3448L.toComposeColor()
 
-val NeonCyan = Color(0xFF00F0FF.toInt())
-val NeonCyanVariant = Color(0xFF00C4D6.toInt())
-val NeonEmerald = Color(0xFF00E599.toInt())
-val NeonMagenta = Color(0xFFFF2A85.toInt())
-val NeonAmber = Color(0xFFFFB800.toInt())
-val NeonBlue = Color(0xFF3880FF.toInt())
+val NeonCyan = 0xFF00F0FFL.toComposeColor()
+val NeonCyanVariant = 0xFF00C4D6L.toComposeColor()
+val NeonEmerald = 0xFF00E599L.toComposeColor()
+val NeonMagenta = 0xFFFF2A85L.toComposeColor()
+val NeonAmber = 0xFFFFB800L.toComposeColor()
+val NeonBlue = 0xFF3880FFL.toComposeColor()
 
-val TextPrimary = Color(0xFFF2F5FB.toInt())
-val TextSecondary = Color(0xFF9CA9C4.toInt())
-val TextMuted = Color(0xFF5A6680.toInt())
+val TextPrimary = 0xFFF2F5FBL.toComposeColor()
+val TextSecondary = 0xFF9CA9C4L.toComposeColor()
+val TextMuted = 0xFF5A6680L.toComposeColor()
 
-val TimelineTrackBg = Color(0xFF131722.toInt())
-val TimelineGridLine = Color(0xFF222B3D.toInt())
-val TimelinePlayhead = Color(0xFFFF3366.toInt())
+val TimelineTrackBg = 0xFF131722L.toComposeColor()
+val TimelineGridLine = 0xFF222B3DL.toComposeColor()
+val TimelinePlayhead = 0xFFFF3366L.toComposeColor()

@@ -40,6 +40,7 @@ fun EditorScreen(
     module: com.example.di.AppModule,
     onNavigateBack: () -> Unit,
     viewModel: EditorViewModel = viewModel(
+        key = "editor_vm_$projectId",
         factory = KmpViewModelFactory(
             repository = module.repository,
             audioPlayer = module.audioPlayer,
@@ -169,6 +170,7 @@ fun EditorScreen(
                                     selectedLayerId = selectedLayerId,
                                     onSelectLayer = { viewModel.selectLayer(it) },
                                     bitmaps = loadedBitmaps,
+                                    previewCache = module.previewCache,
                                     frameVersion = frameVersion,
                                     modifier = Modifier.fillMaxSize()
                                 )
@@ -208,6 +210,7 @@ fun EditorScreen(
                                     onDeleteLayer = { viewModel.deleteLayer(it) },
                                     onOpenAddLayer = { showAddLayerSheet = true },
                                     onCommitTiming = { viewModel.commitLayer(it) },
+                                    previewCache = module.previewCache,
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }
@@ -331,6 +334,7 @@ fun EditorScreen(
                                 selectedLayerId = selectedLayerId,
                                 onSelectLayer = { viewModel.selectLayer(it) },
                                 bitmaps = loadedBitmaps,
+                                previewCache = module.previewCache,
                                 frameVersion = frameVersion,
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -369,6 +373,7 @@ fun EditorScreen(
                                 onDeleteLayer = { viewModel.deleteLayer(it) },
                                 onOpenAddLayer = { showAddLayerSheet = true },
                                 onCommitTiming = { viewModel.commitLayer(it) },
+                                previewCache = module.previewCache,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }

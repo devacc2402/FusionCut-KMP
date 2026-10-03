@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Videocam
+import com.example.ui.util.toComposeColor
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -170,7 +171,7 @@ fun AddLayerPanel(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
                             .background(SurfaceContainerDark)
-                            .border(width = 1.dp, color = Color(0xFF9D65F5).copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp))
+                            .border(width = 1.dp, color = Color(0xFF9D65F5.toInt()).copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp))
                             .clickable { onExtractAudioFromVideo() }
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -179,10 +180,10 @@ fun AddLayerPanel(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF9D65F5).copy(alpha = 0.2f)),
+                                .background(Color(0xFF9D65F5.toInt()).copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.GraphicEq, contentDescription = null, tint = Color(0xFFB388FF), modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.GraphicEq, contentDescription = null, tint = Color(0xFFB388FF.toInt()), modifier = Modifier.size(20.dp))
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -211,19 +212,19 @@ fun AddLayerPanel(
                     ) {
                         SampleTextureCard(
                             title = "Cyberpunk",
-                            gradient = listOf(Color(0xFFFF007F), Color(0xFF7928CA), Color(0xFF00F0FF)),
+                            gradient = listOf(Color(0xFFFF007F.toInt()), Color(0xFF7928CA.toInt()), Color(0xFF00F0FF.toInt())),
                             onClick = { onAddSampleMedia("sample://cyberpunk") },
                             modifier = Modifier.weight(1f)
                         )
                         SampleTextureCard(
                             title = "Emerald Glow",
-                            gradient = listOf(Color(0xFF00F5A0), Color(0xFF00D9F5), Color(0xFF0F2027)),
+                            gradient = listOf(Color(0xFF00F5A0.toInt()), Color(0xFF00D9F5.toInt()), Color(0xFF0F2027.toInt())),
                             onClick = { onAddSampleMedia("sample://emerald") },
                             modifier = Modifier.weight(1f)
                         )
                         SampleTextureCard(
                             title = "Sunset",
-                            gradient = listOf(Color(0xFFFA709A), Color(0xFFFEE140)),
+                            gradient = listOf(Color(0xFFFA709A.toInt()), Color(0xFFFEE140.toInt())),
                             onClick = { onAddSampleMedia("sample://sunset") },
                             modifier = Modifier.weight(1f)
                         )
@@ -254,7 +255,7 @@ fun AddLayerPanel(
                             title = "Extract Audio",
                             subtitle = "Extract soundtrack from video",
                             icon = Icons.Default.GraphicEq,
-                            color = Color(0xFFB388FF),
+                            color = Color(0xFFB388FF.toInt()),
                             onClick = { onExtractAudioFromVideo() },
                             modifier = Modifier.weight(1f)
                         )
@@ -382,7 +383,7 @@ fun AddLayerPanel(
                             0xFFFFFFFF to "Pure White"
                         ).forEach { (colorVal, name) ->
                             SolidPlateCard(
-                                color = Color(colorVal),
+                                color = colorVal.toComposeColor(),
                                 name = name,
                                 onClick = { onAddSolid(colorVal) }
                             )

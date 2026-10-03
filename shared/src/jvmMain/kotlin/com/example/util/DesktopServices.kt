@@ -19,7 +19,7 @@ class DesktopPlatformBitmap(private val imageBitmap: ImageBitmap) : PlatformBitm
     override fun asImageBitmap(): ImageBitmap = imageBitmap
 
     override fun getPixels(pixels: IntArray) {
-        // readPixels on Desktop expects an IntArray
+        // readPixels on Desktop expects stride as number of Ints per row (width)
         imageBitmap.readPixels(
             buffer = pixels,
             startX = 0,
@@ -27,7 +27,7 @@ class DesktopPlatformBitmap(private val imageBitmap: ImageBitmap) : PlatformBitm
             width = width,
             height = height,
             bufferOffset = 0,
-            stride = width * 4
+            stride = width
         )
     }
 
@@ -56,19 +56,46 @@ class DesktopAudioPlayer : AudioPlayer {
 class DesktopMediaProvider : MediaProvider {
     private val bitmapCache = mutableMapOf<String, PlatformBitmap>()
 
+    private fun resolveFile(uriString: String): File? {
+        var cleanPath = uriString
+            .removePrefix("file:///")
+            .removePrefix("file://")
+            .removePrefix("file:/")
+            .replace("%20", " ")
+        while (cleanPath.startsWith("/") || cleanPath.startsWith("\\")) {
+            cleanPath = cleanPath.substring(1)
+        }
+        val f1 = File(cleanPath)
+        if (f1.exists()) return f1
+        val f2 = File(uriString)
+        if (f2.exists()) return f2
+        return null
+    }
+
     override suspend fun getMediaMetadata(uriString: String): MediaMetadataInfo? {
-        val path = uriString.removePrefix("file://").replace("%20", " ")
-        val file = File(path)
-        if (!file.exists()) return null
+        val file = resolveFile(uriString) ?: return null
         
-        val isVideo = uriString.contains("video", ignoreCase = true) || uriString.endsWith(".mp4", ignoreCase = true)
+        val isVideo = uriString.contains("video", ignoreCase = true) || uriString.endsWith(".mp4", ignoreCase = true) || uriString.endsWith(".mov", ignoreCase = true)
         val durationMs = try {
             if (isVideo) Mp4DurationExtractor.getDurationMs(file) else 0L
         } catch (e: Exception) { 0L }
 
+        var imgW = 1280
+        var imgH = 720
+        try {
+            val bytes = file.readBytes()
+            val img = Image.makeFromEncoded(bytes)
+            if (img.width > 0 && img.height > 0) {
+                imgW = img.width
+                imgH = img.height
+            }
+        } catch (e: Exception) {
+            // Ignore image decode error for video files
+        }
+
         return MediaMetadataInfo(
-            width = 1280,
-            height = 720,
+            width = imgW,
+            height = imgH,
             durationMs = if (durationMs > 0) durationMs else 5000L,
             rotation = 0,
             isVideo = isVideo
@@ -83,10 +110,7 @@ class DesktopMediaProvider : MediaProvider {
         if (bitmapCache.containsKey(uriString)) return bitmapCache[uriString]
         
         return try {
-            val path = uriString.removePrefix("file://").replace("%20", " ")
-            val file = File(path)
-            if (!file.exists()) return null
-            
+            val file = resolveFile(uriString) ?: return null
             val bytes = file.readBytes()
             val skiaImage = Image.makeFromEncoded(bytes)
             
@@ -105,9 +129,7 @@ class DesktopMediaProvider : MediaProvider {
     }
 
     override suspend fun loadFrame(uriString: String, timeSec: Float, targetW: Int, targetH: Int): PlatformBitmap? {
-        // Desktop doesn't support frame-by-frame video extraction yet.
-        // Returning null allows the RenderEngine to show the placeholder gizmo.
-        return null 
+        return loadBitmap(uriString, isVideo = true)
     }
 
     override fun clearCache() {
