@@ -517,17 +517,16 @@ object BitmapCache {
         try {
             var frame: Bitmap? = null
             
-            // OPTIMIZATION: Start with fast PREVIOUS_SYNC keyframe search.
-            // This is 10x-50x faster than CLOSEST for preview purposes.
+            // Use OPTION_CLOSEST for exact frame accuracy without keyframe skips
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 try {
-                    frame = retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_PREVIOUS_SYNC, targetW, targetH)
+                    frame = retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, targetW, targetH)
                 } catch (ignored: Exception) {}
             }
             
             if (frame == null) {
                 try {
-                    frame = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_PREVIOUS_SYNC)
+                    frame = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
                 } catch (ignored: Exception) {}
             }
 

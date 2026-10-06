@@ -60,7 +60,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 8
-        versionName = "1.1.0"
+        versionName = "1.1.1"
         
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -144,7 +144,24 @@ compose.desktop {
                 shortcut = true
                 menu = true
                 upgradeUuid = "a6f23b2d-1284-4b5c-a12d-8e4726b91a2e"
-                iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
+                iconFile.set(project.file("src/jvmMain/resources/icon.png"))
+            }
+        }
+    }
+}
+
+// Task to sync app icon from ic_app_logo.jpg to Desktop icon.png
+tasks.register("syncAppIcon") {
+    doLast {
+        val logoFile = file("src/androidMain/res/drawable/ic_app_logo.jpg")
+        if (logoFile.exists()) {
+            val resDir = file("src/jvmMain/resources")
+            resDir.mkdirs()
+            val img = javax.imageio.ImageIO.read(logoFile)
+            if (img != null) {
+                val pngFile = file("${resDir.absolutePath}/icon.png")
+                javax.imageio.ImageIO.write(img, "PNG", pngFile)
+                println("FusionCut: Desktop icon.png generated from ic_app_logo.jpg")
             }
         }
     }

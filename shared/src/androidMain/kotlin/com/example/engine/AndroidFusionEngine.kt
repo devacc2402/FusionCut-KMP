@@ -88,6 +88,28 @@ class AndroidFusionEngine : IFusionEngine {
             imageCache[mediaUri] = info
             return info
         }
+
+        fun getVideoFrameTexture(mediaUri: String?, timeSec: Float): AndroidTextureInfo? {
+            if (mediaUri.isNullOrBlank()) return null
+            val bucket = (timeSec * 30).toInt().coerceAtLeast(0) // 30 FPS exact frame timecode
+            val cacheKey = "$mediaUri@$bucket"
+            imageCache[cacheKey]?.let { return it }
+
+            val ctx = AndroidServices.context ?: return null
+            val bitmap: PlatformBitmap = runBlocking(Dispatchers.IO) {
+                AndroidMediaProvider(ctx).loadFrame(mediaUri, timeSec, 640, 640) ?: AndroidMediaProvider(ctx).loadBitmap(mediaUri, isVideo = true)
+            } ?: return null
+
+            val w = bitmap.width.coerceAtLeast(1)
+            val h = bitmap.height.coerceAtLeast(1)
+            val pixels = IntArray(w * h)
+            bitmap.getPixels(pixels)
+
+            val info = AndroidTextureInfo(w, h, pixels)
+            if (imageCache.size > 60) imageCache.clear()
+            imageCache[cacheKey] = info
+            return info
+        }
     }
 
     private external fun nInitEngine(): Boolean
@@ -182,7 +204,28 @@ class AndroidFusionEngine : IFusionEngine {
                         imageWidths[i] = textInfo.width
                         imageHeights[i] = textInfo.height
                         imagePixelArrays[i] = textInfo.pixels
-                    } else if (layer.type == LayerType.IMAGE || layer.type == LayerType.VIDEO) {
+                    } else if (layer.type == LayerType.VIDEO) {
+                        val vidInfo = getVideoFrameTexture(layer.mediaUri, timeSec) ?: getImageTexture(layer.mediaUri)
+                        if (vidInfo != null) {
+                            dimensions[i * 4 + 0] = layer.baseWidth
+                            dimensions[i * 4 + 1] = layer.baseHeight
+                            dimensions[i * 4 + 2] = layer.strokeWidth
+                            dimensions[i * 4 + 3] = layer.cornerRadius
+
+                            imageWidths[i] = vidInfo.width
+                            imageHeights[i] = vidInfo.height
+                            imagePixelArrays[i] = vidInfo.pixels
+                        } else {
+                            dimensions[i * 4 + 0] = layer.baseWidth
+                            dimensions[i * 4 + 1] = layer.baseHeight
+                            dimensions[i * 4 + 2] = layer.strokeWidth
+                            dimensions[i * 4 + 3] = layer.cornerRadius
+
+                            imageWidths[i] = 0
+                            imageHeights[i] = 0
+                            imagePixelArrays[i] = null
+                        }
+                    } else if (layer.type == LayerType.IMAGE) {
                         val imgInfo = getImageTexture(layer.mediaUri)
                         if (imgInfo != null) {
                             dimensions[i * 4 + 0] = layer.baseWidth

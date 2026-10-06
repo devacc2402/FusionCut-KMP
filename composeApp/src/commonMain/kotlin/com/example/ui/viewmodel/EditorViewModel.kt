@@ -745,8 +745,10 @@ class EditorViewModel(
         val name = if (isVideo) "Video ${nextOrder + 1}" else "Image ${nextOrder + 1}"
 
         viewModelScope.launch {
+            val originalMeta = mediaProvider.getMediaMetadata(uriString)
             val localUri = mediaProvider.copyMediaToLocalStorage(projectId, uriString, isVideo)
-            val meta = mediaProvider.getMediaMetadata(localUri)
+            val localMeta = mediaProvider.getMediaMetadata(localUri)
+            val meta = if (originalMeta != null && originalMeta.durationMs > 0) originalMeta else (localMeta ?: originalMeta)
             val videoExtensions = listOf(".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v")
             val isRealVideo = isVideo || meta?.isVideo == true || videoExtensions.any { uriString.endsWith(it, ignoreCase = true) }
 
