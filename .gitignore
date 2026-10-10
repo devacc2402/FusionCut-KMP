@@ -3,12 +3,7 @@
 .gradle_local
 .kotlin
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/.idea/
 .DS_Store
 build/
 **/build/
@@ -22,3 +17,4 @@ debug.keystore
 .artifacts/
 crash_stacktrace.txt
 *.log
+hs_err_pid*.log

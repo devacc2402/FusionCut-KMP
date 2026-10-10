@@ -18,6 +18,8 @@ class DesktopPlatformBitmap(private val imageBitmap: ImageBitmap) : PlatformBitm
     
     override fun asImageBitmap(): ImageBitmap = imageBitmap
 
+    private var cachedBytes: ByteArray? = null
+
     override fun getPixels(pixels: IntArray) {
         // readPixels on Desktop expects stride as number of Ints per row (width)
         imageBitmap.readPixels(
@@ -32,11 +34,19 @@ class DesktopPlatformBitmap(private val imageBitmap: ImageBitmap) : PlatformBitm
     }
 
     override fun setPixels(pixels: IntArray) {
-        val bytes = ByteBuffer.allocate(width * height * 4).order(ByteOrder.nativeOrder())
-        bytes.asIntBuffer().put(pixels)
+        val requiredCapacity = width * height * 4
+        var bytes = cachedBytes
+        if (bytes == null || bytes.size < requiredCapacity) {
+            bytes = ByteArray(requiredCapacity)
+            cachedBytes = bytes
+        }
+
+        val buf = ByteBuffer.wrap(bytes).order(ByteOrder.nativeOrder())
+        buf.asIntBuffer().put(pixels)
+
         val skiaImage = Image.makeRaster(
             ImageInfo.makeN32Premul(width, height),
-            bytes.array(),
+            bytes,
             width * 4
         )
         val canvas = Canvas(imageBitmap)

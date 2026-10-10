@@ -149,6 +149,32 @@ class WindowsFusionEngine : IFusionEngine {
         }
     }
 
+    private var cachedCapacity = 0
+    private var layerTypesBuf = IntArray(0)
+    private var shapeTypesBuf = IntArray(0)
+    private var transformsBuf = FloatArray(0)
+    private var colorsBuf = IntArray(0)
+    private var dimensionsBuf = FloatArray(0)
+    private var imageWidthsBuf = IntArray(0)
+    private var imageHeightsBuf = IntArray(0)
+    private var imagePixelArraysBuf = arrayOfNulls<IntArray>(0)
+    private var videoUrisBuf = arrayOfNulls<String>(0)
+
+    private fun ensureCapacity(layerCount: Int) {
+        if (layerCount > cachedCapacity) {
+            cachedCapacity = layerCount.coerceAtLeast(16)
+            layerTypesBuf = IntArray(cachedCapacity)
+            shapeTypesBuf = IntArray(cachedCapacity)
+            transformsBuf = FloatArray(cachedCapacity * 6)
+            colorsBuf = IntArray(cachedCapacity * 2)
+            dimensionsBuf = FloatArray(cachedCapacity * 4)
+            imageWidthsBuf = IntArray(cachedCapacity)
+            imageHeightsBuf = IntArray(cachedCapacity)
+            imagePixelArraysBuf = arrayOfNulls(cachedCapacity)
+            videoUrisBuf = arrayOfNulls(cachedCapacity)
+        }
+    }
+
     override fun renderFrame(
         project: Project,
         layers: List<Layer>,
@@ -164,15 +190,17 @@ class WindowsFusionEngine : IFusionEngine {
                 val activeLayers = layers.filter { it.isVisible && it.isActiveAt(timeSec) }.sortedBy { it.orderIndex }
                 val layerCount = activeLayers.size
 
-                val layerTypes = IntArray(layerCount)
-                val shapeTypes = IntArray(layerCount)
-                val transforms = FloatArray(layerCount * 6)
-                val colors = IntArray(layerCount * 2)
-                val dimensions = FloatArray(layerCount * 4)
-                val imageWidths = IntArray(layerCount)
-                val imageHeights = IntArray(layerCount)
-                val imagePixelArrays = arrayOfNulls<IntArray>(layerCount)
-                val videoUris = arrayOfNulls<String>(layerCount)
+                ensureCapacity(layerCount)
+
+                val layerTypes = layerTypesBuf
+                val shapeTypes = shapeTypesBuf
+                val transforms = transformsBuf
+                val colors = colorsBuf
+                val dimensions = dimensionsBuf
+                val imageWidths = imageWidthsBuf
+                val imageHeights = imageHeightsBuf
+                val imagePixelArrays = imagePixelArraysBuf
+                val videoUris = videoUrisBuf
 
                 for (i in 0 until layerCount) {
                     val layer = activeLayers[i]
